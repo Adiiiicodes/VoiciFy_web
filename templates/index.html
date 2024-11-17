@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>VoxiFy - Text to Speech Converter</title>
+        <link rel="stylesheet" href="static/styles.css">
+    </head>
+    <body>
+        <form>
+            <header><h2><b>VoiciFy - Text to Speech Converter</b></h2></header>
+            <br>
+            <!-- Voice Selection -->
+            <div class="form1">
+                <label for="voice" aria-label="Choose Voice">Choose Voice:</label>
+                <div class="toggle-buttons">
+                    <input type="radio" id="male" name="voice" value="male" checked>
+                    <label for="male" class="radio">Male</label>
+                    <input type="radio" id="female" name="voice" value="female">
+                    <label for="female" class="radio">Female</label>
+                </div>
+            </div>
+
+            <!-- Language Selection -->
+            <div class="form1">
+                <label for="language" aria-label="Select Language">Select Language:</label>
+                <select id="language" aria-label="Language Selector" required>
+                    <option value="en" selected>English</option>
+                    <option value="es">Spanish</option>
+                    <option value="fr">French</option>
+                    <option value="de">German</option>
+                    <option value="it">Italian</option>
+                    <option value="pt">Portuguese</option>
+                    <option value="ru">Russian</option>
+                    <option value="ja">Japanese</option>
+                    <option value="ko">Korean</option>
+                    <option value="zh-cn">Chinese</option>
+                </select>
+            </div>
+
+            <!-- Text Input -->
+            <div class="form1">
+                <label for="text-input" aria-label="Enter Text or Upload PDF">Enter Text or Upload PDF:</label><br>
+                <textarea id="text-input" placeholder="Type or paste your text here..."></textarea>
+                <br>
+                <input type="file" id="pdf-upload" accept=".pdf" aria-label="Upload PDF File">
+            </div>
+
+            <!-- Speech Rate -->
+            <div class="form1">
+                <label for="rate" aria-label="Speech Rate">Speech Rate:</label>
+                <div class="rate-container">
+                    <span id="rate-value">1.0x</span>
+                    <input type="range" id="rate" min="0.5" max="2" step="0.1" value="1" aria-label="Adjust Speech Rate">
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="form-buttons">
+                <button type="button" id="convert" aria-label="Convert Text to Speech">Convert to Speech</button>
+                <audio id="audioPlayer" controls>
+                    <source id="audioSource" src="" type="audio/mp3">
+                    Your browser does not support the audio element.
+                </audio>
+            </div>
+        </form>
+        <br>
+
+        <!-- Audio Player -->
+        
+
+        <!-- Waves Footer -->
+        <footer>
+            <svg class="waves" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+            viewBox="0 24 150 28" preserveAspectRatio="none" shape-rendering="auto">
+                <defs>
+                    <path id="gentle-wave" d="M-160 44c30 0 58-18 88-18s 58 18 88 18 58-18 88-18 58 18 88 18 v44h-352z" />
+                </defs>
+                <g class="parallax">
+                    <use xlink:href="#gentle-wave" x="48" y="0" fill="rgba(255,255,255,0.7" />
+                    <use xlink:href="#gentle-wave" x="48" y="3" fill="rgba(255,255,255,0.5)" />
+                    <use xlink:href="#gentle-wave" x="48" y="5" fill="rgba(255,255,255,0.3)" />
+                    <use xlink:href="#gentle-wave" x="48" y="7" fill="#fff" />
+                </g>
+            </svg>
+        </footer>
+
+        <script src="static/Voicify.js"></script>
+        <script>
+            // Handle the convert button
+            document.getElementById('convert').addEventListener('click', function() {
+                const text = document.getElementById('text-input').value.trim();
+                const language = document.getElementById('language').value;
+                const voice = document.querySelector('input[name="voice"]:checked').value;
+                const rate = document.getElementById('rate').value;
+
+                if (!text) {
+                    alert("Please enter text.");
+                    return;
+                }
+
+                // Send a POST request to the server to convert text to speech
+                fetch('/convert', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        text: text,
+                        voice: voice,
+                        rate: rate,
+                        language: language
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.audio_url) {
+                        // Set the audio source to the generated audio URL
+                        const audioPlayer = document.getElementById('audioPlayer');
+                        const audioSource = document.getElementById('audioSource');
+                        audioSource.src = data.audio_url; // Set the source to the returned URL
+                        audioPlayer.load(); // Reload to apply the new source
+                        audioPlayer.play(); // Play the audio
+                    } else {
+                        alert("Error: " + data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+            });
+
+            // Handle the play button
+            document.getElementById('play').addEventListener('click', function() {
+                const audioPlayer = document.getElementById('audioPlayer');
+                if (audioPlayer.src) {
+                    audioPlayer.play();
+                } else {
+                    alert("No audio file found. Please convert text first.");
+                }
+            });
+
+            // Handle the download button
+            document.getElementById('download').addEventListener('click', function() {
+                fetch('/download')
+                    .then(response => response.blob())
+                    .then(blob => {
+                        const url = window.URL.createObjectURL(blob);
+                        const link = document.createElement('a');
+                        link.href = url;
+                        link.download = 'output.wav';
+                        link.click();
+                    });
+            });
+        </script>
+    </body>
+</html>
